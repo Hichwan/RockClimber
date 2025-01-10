@@ -1,27 +1,25 @@
-import { View, Text, Image, StyleSheet, useWindowDimensions, ScrollView } from 'react-native';
+import { View, Text, Image, StyleSheet, useWindowDimensions, ScrollView, SafeAreaView } from 'react-native';
 import React, { useState } from 'react';
-import CustomInput from '../../components/CustomInput';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../navigation/index';
-import CustomButton from '../../components/CustomButton/CustomButton';
-import { useNavigation } from '@react-navigation/native';
+import CustomInput from '../components/CustomInput';
+import CustomButton from '../components/CustomButton/CustomButton';
+import { useRouter } from 'expo-router';
 
-type SignInScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'SignIn'>;
 
 const SignInScreen = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
   const { height } = useWindowDimensions();
-  const navigation = useNavigation<SignInScreenNavigationProp>();
+  const router = useRouter();
 
   const onSignInPressed = () => {
     console.warn("Sign In");
-    navigation.navigate('Home');
+    router.push('../Home');
   };
 
   const onForgotPasswordPressed = () => {
     console.warn("onForgotPasswordPressed");
+    router.push('/ForgotPass')
   };
 
   const onSignInGooglePressed = () => {
@@ -32,13 +30,15 @@ const SignInScreen = () => {
   };
   const onSignUpPressed = () => {
     console.warn("onSignUpPressed");
+    router.push('/SignUpScreen');
   };
 
   return (
+    <SafeAreaView style ={styles.safeContainer}>
     <ScrollView showsVerticalScrollIndicator={false}>
     <View style={styles.root}>
       <Image 
-        source={require('../../assets/images/icon.png')} 
+        source={require('../assets/images/icon.png')} 
         style={[styles.icon, { height: height * 0.3 }]} 
         resizeMode="contain"  
       />
@@ -90,6 +90,7 @@ const SignInScreen = () => {
       />
     </View>
     </ScrollView>
+    </SafeAreaView>
   );
 };
 
@@ -97,6 +98,10 @@ const styles = StyleSheet.create({
   root: {
     alignItems: 'center',
     padding: 20,
+  },
+  safeContainer: {
+    flex: 1,
+    backgroundColor: 'white', 
   },
   icon: {
     width: '70%',

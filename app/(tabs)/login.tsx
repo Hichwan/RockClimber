@@ -1,22 +1,17 @@
 import {SafeAreaView, Text, Image, StyleSheet, Platform } from 'react-native';
-import SignInScreen from '../../src/screens/SignInScreen';
-import SignUpScreen from '../../src/screens/SignUpScreen';
-import { StatusBar} from 'expo-status-bar';
-import { Link } from 'expo-router';
-
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+import React from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import 'react-native-gesture-handler'
+import Navigation from '@/src/navigation';
 
 
-
-export default function HomeScreen() {
+export default function LoginScreen() {
   return (
     <SafeAreaView style ={styles.root}>
-        <SignInScreen/>
+      <NavigationContainer>
+        <Navigation/>
+      </NavigationContainer>
     </SafeAreaView>
-
   );
 }  
 

@@ -40,7 +40,8 @@ const styles = StyleSheet.create({
     },
 
     container_Secondary:{
-        backgroundColor: 'grey',
+        borderColor: '#3B71F3',
+        borderWidth: 2
     },
 
     container_Tertiary:{
@@ -56,7 +57,7 @@ const styles = StyleSheet.create({
     },
 
     text_Secondary: {
-        color: 'black',
+        color: '#3B71F3',
     },
 
     text_Tertiary: {

@@ -1,12 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Modal, Button } from 'react-native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useNavigation } from '@react-navigation/native';
-import CustomInput from '../../components/CustomInput';
-import CustomButton from '../../components/CustomButton/CustomButton';
-import { RootStackParamList } from '../navigation/index';
+import { View, Text, StyleSheet, ScrollView, Button, SafeAreaView } from 'react-native';
+import CustomInput from '../components/CustomInput';
+import CustomButton from '../components/CustomButton/CustomButton';
+import { useRouter } from 'expo-router';
 
-type SignUpScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'SignUp'>;
 
 const SignUpScreen: React.FC<{ navigation: any }> = () => {
   const [username, setUsername] = useState('');
@@ -14,26 +11,20 @@ const SignUpScreen: React.FC<{ navigation: any }> = () => {
   const [password, setPassword] = useState('');
   const [passwordRepeat, setPasswordRepeat] = useState('');
 
-  const [modalVisible, setModalVisible] = useState(false);
-  const [content, setContent] = useState('');
-
-  const navigation = useNavigation<SignUpScreenNavigationProp>();
+  const router = useRouter();
 
   const onRegisterPressed = () => {
     console.warn("onRegisterPressed");
+    router.push('/ConfirmSignUp');
   };
 
   const onSignInPressed = () => {
     console.warn("Navigating to SignIn");
-    navigation.navigate('SignIn'); 
-  };
-
-  const showModal = (text: string) => {
-    setContent(text);
-    setModalVisible(true);
+    router.push('/SignInScreen');
   };
 
   return (
+    <SafeAreaView style ={styles.safeContainer}>
     <ScrollView showsVerticalScrollIndicator={false}>
       <View style={styles.root}>
         <Text style={styles.title}>Create an account</Text>
@@ -68,13 +59,9 @@ const SignUpScreen: React.FC<{ navigation: any }> = () => {
 
         <Text style={styles.text}>
           By registering, you confirm that you accept our{' '}
-          <Text style={styles.link} onPress={() => showModal('Terms of Use')}>
-            Terms of Use
-          </Text>{' '}
+          <Text style={styles.link} onPress={() => router.push('/terms')}>Terms of Use</Text>{' '}
           and{' '}
-          <Text style={styles.link} onPress={() => showModal('Privacy Policy')}>
-            Privacy Policy
-          </Text>.
+          <Text style={styles.link} onPress={() => router.push('/privacy')}>Privacy Policy</Text>.
         </Text>
 
         <CustomButton 
@@ -100,20 +87,8 @@ const SignUpScreen: React.FC<{ navigation: any }> = () => {
         />
 
       </View>
-      <Modal animationType="slide" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>{content}</Text>
-            <Text style={styles.modalText}>
-              {content === 'Terms of Use'
-                ? 'These are the terms of use for our app. Please read carefully...'
-                : 'This is our privacy policy. We respect your data and privacy...'}
-            </Text>
-            <Button title="Close" onPress={() => setModalVisible(false)} />
-          </View>
-        </View>
-      </Modal>
     </ScrollView>
+    </SafeAreaView>
   );
 };
 
@@ -122,6 +97,10 @@ const styles = StyleSheet.create({
   root: {
     alignItems: 'center',
     padding: 20,
+  },
+  safeContainer: {
+    flex: 1,
+    backgroundColor: 'white', 
   },
   title: {
     fontSize: 24,
