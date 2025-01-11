@@ -1,17 +1,19 @@
 {
   "expo": {
     "name": "Climb On",
-    "slug": "Climb On",
+    "slug": "Climb_On",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "Climb On",
+    "scheme": "climb-on",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
+      "bundleIdentifier": "com.hichwan.climb-on",
       "supportsTablet": true
     },
     "android": {
+      "package": "com.hichwan.climbon", 
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -36,6 +38,20 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "524e1abe-b6d2-4e6c-b557-c13d629bce94"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/524e1abe-b6d2-4e6c-b557-c13d629bce94"
     }
   }
 }

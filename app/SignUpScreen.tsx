@@ -1,21 +1,60 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Button, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Button, SafeAreaView, TextInput } from 'react-native';
 import CustomInput from '../components/CustomInput';
 import CustomButton from '../components/CustomButton/CustomButton';
 import { useRouter } from 'expo-router';
+import { useForm, Controller } from 'react-hook-form';
+import { auth } from '../src/config/firebaseConfig';
+import { createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
+import { Alert } from "react-native"; 
 
+const EMAIL_REX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+type SignUpFormData = {
+  password: string;
+  repeatpassword: string;
+  email: string;
+};
 
 const SignUpScreen: React.FC<{ navigation: any }> = () => {
-  const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [passwordRepeat, setPasswordRepeat] = useState('');
 
   const router = useRouter();
 
-  const onRegisterPressed = () => {
-    console.warn("onRegisterPressed");
-    router.push('/ConfirmSignUp');
+  const { control, handleSubmit, formState: {errors}, watch } = useForm<SignUpFormData>({
+    defaultValues: {
+      password: '',
+      repeatpassword: '',
+      email: '',
+    },
+  });
+
+  const pwd = watch('password')
+
+  const onRegisterPressed = async (data: SignUpFormData) => {
+    try {
+      
+      const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
+      const user = userCredential.user;
+  
+      
+      await sendEmailVerification(user);
+  
+      
+      Alert.alert(
+        "Verify Your Email",
+        "A verification email has been sent. Please check your inbox and verify before logging in."
+      );
+  
+      
+      router.push({
+        pathname: "/ConfirmSignUp",
+        params: { email: data.email },
+      });
+  
+    } catch (error: any) {
+      console.error("Sign-up error:", error);
+      Alert.alert("Error", error.message);
+    }
   };
 
   const onSignInPressed = () => {
@@ -23,39 +62,95 @@ const SignUpScreen: React.FC<{ navigation: any }> = () => {
     router.push('/SignInScreen');
   };
 
+  
+
   return (
     <SafeAreaView style ={styles.safeContainer}>
     <ScrollView showsVerticalScrollIndicator={false}>
       <View style={styles.root}>
         <Text style={styles.title}>Create an account</Text>
 
-        <CustomInput 
-        value={username} 
-        setValue={setUsername} 
-        placeholder="Username" 
-        secureTextEntry={false} />
+        <Controller
+            control={control}
+            name="email"
+            rules ={{
+              required: 'Email is required',
+              pattern: {
+                value: EMAIL_REX,
+                message: "Enter a valid email address",
+              },
+            }}
+            render={({ field, fieldState:{error} }) => (
+              <>
+              <TextInput
+                style={[styles.input, error && styles.inputError]}
+                placeholder="Email"
+                placeholderTextColor="grey"
+                value={field.value || ''}
+                onChangeText={field.onChange}
+              />
+              {error &&(
+                <Text style={{color: 'red', alignSelf: 'stretch'}}>{error.message || 'Error'}</Text>
+                )}
+              </>
+          )}
+        />
 
-        <CustomInput 
-        value={email} 
-        setValue={setEmail} 
-        placeholder="Email" 
-        secureTextEntry={false} />
 
-        <CustomInput 
-        value={password} 
-        setValue={setPassword} 
-        placeholder="Password" 
-        secureTextEntry={true} />
+        <Controller
+          control={control}
+          name="password"
+          rules ={{
+            required: 'Password is required',
+            minLength: {
+              value: 6,
+              message: "Password must be at least 6 characters long"
+            },
+          }}
+          render={({ field, fieldState:{error} }) => (
+            <>
+            <TextInput
+              style={[styles.input, error && styles.inputError]}
+              placeholder="Password"
+              placeholderTextColor="grey"
+              value={field.value || ''}
+              onChangeText={field.onChange}
+              secureTextEntry
+            />
+            {error &&(
+              <Text style={{color: 'red', alignSelf: 'stretch'}}>{error.message || 'Error'}</Text>
+              )}
+            </>
+          )}
+        />
 
-        <CustomInput 
-        value={passwordRepeat} 
-        setValue={setPasswordRepeat} 
-        placeholder="Repeat Password" 
-        secureTextEntry={true} />
+        <Controller
+          control={control}
+          name="repeatpassword"
+          rules ={{
+            validate: value=> value == pwd || 'Password does not match'
+          }}
+          render={({ field, fieldState:{error} }) => (
+            <>
+            <TextInput
+              style={[styles.input, error && styles.inputError]}
+              placeholder="Repeat Password"
+              placeholderTextColor="grey"
+              value={field.value || ''}
+              onChangeText={field.onChange}
+              secureTextEntry
+            />
+            {error &&(
+              <Text style={{color: 'red', alignSelf: 'stretch'}}>{error.message || 'Error'}</Text>
+            )}
+            </>
+          )}
+        />
 
         <CustomButton 
-        text="Register" onPress={onRegisterPressed} 
-        type="Primary" />
+          text="Register" 
+          onPress={handleSubmit(onRegisterPressed)}
+          type="Primary" />
 
         <Text style={styles.text}>
           By registering, you confirm that you accept our{' '}
@@ -116,29 +211,17 @@ const styles = StyleSheet.create({
     color: '#FDB075',
     textDecorationLine: 'underline',
   },
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
+  input: {
+    width: '90%',
+    padding: 10,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 5,
+    marginVertical: 10,
   },
-  modalContent: {
-    width: 300,
-    padding: 20,
-    backgroundColor: 'white',
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  modalText: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 20,
-  },
+  inputError:{
+    borderColor: "red"
+  }
 });
 
 export default SignUpScreen;
