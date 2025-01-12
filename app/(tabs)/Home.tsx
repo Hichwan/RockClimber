@@ -228,7 +228,9 @@ const HomeScreen = () => {
 
       {/* Timer */}
       <View style={styles.timerContainer}>
-        <Text style={styles.timerText}>{formatTime(seconds)}</Text>
+        <Text 
+        style={styles.timerText}>{formatTime(seconds)}
+        </Text>
       </View>
 
       {/* Timer Controls */}

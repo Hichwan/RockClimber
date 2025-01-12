@@ -131,59 +131,72 @@ const ProfileScreen = () => {
       Alert.alert("Error", "No user is logged in.");
       return;
     }
-
-    
-    const climbsRef = collection(db, "climbing_sessions");
-
-    // Filter based on selected range
-    let timeLimit;
-    const now = new Date();
-
-    switch (selectedRange) {
-      case "1day":
-        timeLimit = new Date(now.setDate(now.getDate() - 1));
-        break;
-      case "1week":
-        timeLimit = new Date(now.setDate(now.getDate() - 7));
-        break;
-      case "1month":
-        timeLimit = new Date(now.setMonth(now.getMonth() - 1));
-        break;
-      case "1year":
-        timeLimit = new Date(now.setFullYear(now.getFullYear() - 1));
-        break;
-      default:
-        timeLimit = null; // Delete all
-    }
-
-    try {
-      const q = query(
-        climbsRef,
-        where("userId", "==", user.uid)
-      );
-
-      const querySnapshot = await getDocs(q);
-      let deletedCount = 0;
-
-      for (const doc of querySnapshot.docs) {
-        const climb = doc.data();
-        
-        if (!timeLimit || (climb.timestamp && climb.timestamp.toDate() >= timeLimit)) {
-          await deleteDoc(doc.ref);
-          deletedCount++;
+  
+    Alert.alert(
+      "Confirm Deletion",
+      `Are you sure you want to delete your climbing history for ${selectedRange === "all" ? "All Time" : `the last ${selectedRange}`}? This action cannot be undone.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Delete", 
+          style: "destructive", 
+          onPress: async () => {
+            try {
+              const climbsRef = collection(db, "climbing_sessions");
+  
+              // Filter based on selected range
+              let timeLimit;
+              const now = new Date();
+  
+              switch (selectedRange) {
+                case "1day":
+                  timeLimit = new Date(now.setDate(now.getDate() - 1));
+                  break;
+                case "1week":
+                  timeLimit = new Date(now.setDate(now.getDate() - 7));
+                  break;
+                case "1month":
+                  timeLimit = new Date(now.setMonth(now.getMonth() - 1));
+                  break;
+                case "1year":
+                  timeLimit = new Date(now.setFullYear(now.getFullYear() - 1));
+                  break;
+                default:
+                  timeLimit = null; // Delete all
+              }
+  
+              const q = query(
+                climbsRef,
+                where("userId", "==", user.uid)
+              );
+  
+              const querySnapshot = await getDocs(q);
+              let deletedCount = 0;
+  
+              for (const doc of querySnapshot.docs) {
+                const climb = doc.data();
+  
+                if (!timeLimit || (climb.timestamp && climb.timestamp.toDate() >= timeLimit)) {
+                  await deleteDoc(doc.ref);
+                  deletedCount++;
+                }
+              }
+  
+              Alert.alert("History Cleared", `${deletedCount} climb(s) removed.`);
+            } catch (error: unknown) {
+              if (error instanceof Error) {
+                console.error("Error deleting history:", error);
+                Alert.alert("Error", error.message);
+              } else {
+                Alert.alert("Error", "An unknown error occurred.");
+              }
+            }
+          }
         }
-      }
-
-      Alert.alert("History Cleared", `${deletedCount} climb(s) removed.`);
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        console.error("Error deleting history:", error);
-        Alert.alert("Error", error.message);
-      } else {
-        Alert.alert("Error", "An unknown error occurred.");
-      }
-    }
+      ]
+    );
   };
+  
 
   const handleLogOut = () => {    
     Alert.alert(

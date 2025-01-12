@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { View, Text, FlatList, StyleSheet, Dimensions, SafeAreaView } from "react-native";
+import { useEffect, useState, useRef } from "react";
+import { View, Text, FlatList, StyleSheet, Dimensions, SafeAreaView, Animated } from "react-native";
 import { collection, query, where, orderBy, onSnapshot } from "firebase/firestore";
 import { db, auth } from "../../src/config/firebaseConfig";
 import { LineChart } from "react-native-chart-kit";
@@ -33,6 +33,8 @@ const HistoryScreen = () => {
   };
   
   const [sessions, setSessions] = useState<ClimbingSession[]>([]);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const flatListRef = useRef<FlatList>(null);
 
   useEffect(() => {
     const authInstance = getAuth();
@@ -119,6 +121,25 @@ const HistoryScreen = () => {
     }]
   };
 
+  const handleDataPointClick = (index: number) => {
+    setSelectedIndex(index);
+    
+    // Find corresponding session index in list
+    const matchingSessionIndex = sessions.findIndex(session => 
+      session.timestamp.toDate().toLocaleDateString() ===
+      hardestClimbs[index].timestamp.toDate().toLocaleDateString()
+    );
+
+    // Scroll to corresponding list item
+    if (matchingSessionIndex !== -1 && flatListRef.current) {
+      flatListRef.current.scrollToIndex({ 
+        animated: true, 
+        index: matchingSessionIndex, 
+        viewPosition: 0.9
+      });
+    }
+  };
+
   //Stats Calculation
   const getStats = () => {
     if (!sessions.length) return { avgTime: "0m 0s", totalTime: "0m 0s", avgDifficulty: "N/A", hardestClimb: "N/A" };
@@ -139,16 +160,24 @@ const HistoryScreen = () => {
   };
 
   const { avgTime, totalTime, avgDifficulty, hardestClimb } = getStats()
+
   const sortedSessions = [...hardestClimbs]
   .filter(session => session.timestamp && session.timestamp.toDate) 
   .sort((a, b) => a.timestamp.toDate().getTime() - b.timestamp.toDate().getTime());
+
   const yAxisFormatter = (yLabel: string) => {
     const numValue = parseFloat(yLabel); 
     return reverseDifficultyMap[Math.round(numValue)] || yLabel; 
   };
-  const yAxisLabels = [...new Set(difficultyData.datasets[0].data)]
-  .sort((a, b) => a - b) 
-  .map(value => reverseDifficultyMap[Math.round(value)] || value); 
+
+  const formatDateLabel = (timestamp: any) => {
+    try {
+      const date = new Date(timestamp.toDate());
+      return `${date.getDate()}\n${date.toLocaleString("default", { month: "short" })}`; // e.g., "24\nJan"
+    } catch (error) {
+      return "N/A";
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeContainer}>  
@@ -167,9 +196,7 @@ const HistoryScreen = () => {
           <Text style={styles.chartTitle}>📈 Hardest Climb Per Day</Text>
           <LineChart
               data={{
-                labels: sortedSessions.map(session => 
-                  new Date(session.timestamp.toDate()).toLocaleDateString()
-                ),
+                  labels: hardestClimbs.map(session => formatDateLabel(session.timestamp)),
                 datasets: [
                   {
                     data: sortedSessions.map(session => difficultyMap[session.difficulty] || 0), 
@@ -187,6 +214,7 @@ const HistoryScreen = () => {
                 propsForDots: { r: "4", strokeWidth: "2", stroke: "#000" },
                 formatYLabel: yAxisFormatter, 
               }}
+              onDataPointClick={({ index }) => handleDataPointClick(index)}
               bezier
             />
 
@@ -197,15 +225,19 @@ const HistoryScreen = () => {
 
       {/* List of Climbing Sessions */}
       <FlatList
-        data={sessions}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={styles.sessionItem}>
-            <Text>📅 {new Date(item.timestamp?.toDate()).toLocaleDateString()}</Text>
-            <Text>📍 {item.location || "Unknown"}</Text>
-            <Text>🎯 Difficulty: {reverseDifficultyMap[item.difficulty] || item.difficulty}</Text>
-            <Text>⏳ Time Spent: {Math.floor(item.timeSpent / 60)}m {item.timeSpent % 60}s</Text>
-          </View>
+          ref={flatListRef}
+          data={sessions}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item, index }) => (
+            <View style={[
+              styles.sessionItem,
+              selectedIndex === index ? styles.selectedSession : {} // Highlight selected
+            ]}>
+              <Text>📅 {new Date(item.timestamp?.toDate()).toLocaleDateString()}</Text>
+              <Text>📍 {item.location || "Unknown"}</Text>
+              <Text>🎯 Difficulty: {reverseDifficultyMap[item.difficulty] || item.difficulty}</Text>
+              <Text>⏳ Time Spent: {Math.floor(item.timeSpent / 60)}m {item.timeSpent % 60}s</Text>
+            </View>
   )}
 />
 
@@ -242,6 +274,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1, 
     borderBottomColor: "#ddd", 
     marginBottom: 5 },
+
+  selectedSession:{
+    backgroundColor: "#FFFF99"
+  }
 });
 
 export default HistoryScreen;
