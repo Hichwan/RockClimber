@@ -1,50 +1,89 @@
-# Welcome to your Expo app 👋
+**Rock Climbing Tracker App**
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
 
-## Get started
+A React Native app for tracking rock climbing sessions, including difficulty, location, time spent, and calories burned. Built with Firebase (Firestore, Authentication) and Expo.
 
-1. Install dependencies
+**Features**
 
-   ```bash
-   npm install
-   ```
 
-2. Start the app
+User Authentication
 
-   ```bash
-    npx expo start
-   ```
 
-In the output, you'll find options to open the app in a
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+Sign up, log in, and secure authentication via Firebase.
+Ability to reset passwords.
+Climbing Session Logging
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+Start, pause, and reset a timer for each climb.
+Select climbing difficulty from V grades / Yosemite Decimal System (YDS).
+GPS integration for automatic location tracking (with manual override).
+Saves climb history to Firebase Firestore.
+Progress Tracking
 
-## Get a fresh project
+Displays climbing history in a line chart using react-native-chart-kit.
+Allows interactive graph clicks to highlight sessions in history.
+Computes calories burned based on MET values and user weight.
+User Preferences & Settings
 
-When you're ready, run:
+Enable/Disable GPS tracking from the Profile tab.
+Dynamically update weight for accurate calorie calculation.
+Delete past climbs selectively (e.g., last day, week, month, or all).
+Delete entire account if needed.
+Smooth User Experience
 
-```bash
-npm run reset-project
-```
+Modal Pickers for difficulty and time range selection.
+Confirmation prompts before destructive actions.
+Dark & Light Mode Support via Expo’s ThemedView.
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
 
-## Learn more
+**Tech Stack**
 
-To learn more about developing your project with Expo, look at the following resources:
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+Technology	Purpose
+React Native	Cross-platform mobile development
+Expo	Simplified development & deployment
+Firebase Firestore	Cloud database for storing climb logs
+Firebase Authentication	User authentication and security
+React Navigation	Tab navigation for Home, History, Profile
+Expo Location API	GPS-based location tracking
+AsyncStorage	Persistent user settings (e.g., GPS enabled/disabled)
+React Native Chart Kit	Data visualization for climbing progress
 
-## Join the community
 
-Join our community of developers creating universal apps.
+**1. Installation & Running Locally**
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+ Clone the repository:
+
+sh
+Copy code
+git clone https://github.com/yourusername/RockClimbingTracker.git
+cd RockClimbingTracker
+
+**2. Install dependencies:**
+
+sh
+Copy code
+npm install
+or
+
+sh
+Copy code
+yarn install
+
+**3. Set up Firebase:**
+
+Create a Firebase project at Firebase Console
+Enable Firestore and Authentication (Email/Password)
+Copy Firebase config into src/config/firebaseConfig.ts
+
+**4. Run the app:**
+
+sh
+Copy code
+expo start
+Scan the QR code with Expo Go (iOS/Android)
+Or run in an emulator:
+sh
+Copy code
+npm run android  # For Android
+npm run ios      # For iOS (Mac only)
