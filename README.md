@@ -87,3 +87,22 @@ sh
 Copy code
 npm run android  # For Android
 npm run ios      # For iOS (Mac only)
+
+
+**1/12/25 - Version 2.2.1** 
+
+- Fixed minor bugs and added QOL features.
+
+- To be added:
+
+- Analytic Panel
+
+- Ability to switch between different climbing disciplines
+
+- Get the Google and Apple Log In to work
+
+- Ability to search around for suggestions
+
+- Cleaner UI/Profile Page
+
+- Ability to share with others via social media!
