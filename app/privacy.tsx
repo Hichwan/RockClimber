@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, StyleSheet, Button, SafeAreaView } from 'react-native';
+import { Text, ScrollView, StyleSheet, Button, SafeAreaView } from 'react-native';
 import { useRouter } from 'expo-router';
 
 export default function PrivacyScreen() {

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Button, SafeAreaView, TextInput } from 'react-native';
-import CustomInput from '../components/CustomInput';
 import CustomButton from '../components/CustomButton/CustomButton';
 import { useRouter } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';

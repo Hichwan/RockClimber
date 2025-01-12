@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, Button, TouchableOpacity, Modal } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Modal } from 'react-native';
 import { Picker } from '@react-native-picker/picker';  
 import { StatusBar } from 'expo-status-bar';
 import { ThemedText } from '@/components/ThemedText';

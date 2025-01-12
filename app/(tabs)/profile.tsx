@@ -7,8 +7,10 @@ import { collection, query, where, getDocs, deleteDoc } from "firebase/firestore
 import { db } from "../../src/config/firebaseConfig";
 import { Picker } from "@react-native-picker/picker";
 import CustomButton from '../../components/CustomButton/CustomButton';
+import { useRouter } from 'expo-router';
 
 const ProfileScreen = () => {
+  const router = useRouter();
   const auth = getAuth();
   const user: User | null = auth.currentUser;  // Explicitly typed
 
@@ -136,6 +138,31 @@ const ProfileScreen = () => {
     }
   };
 
+  const handleLogOut = () => {    
+    Alert.alert(
+      "Log Out",  
+      "Are you sure you want to log out?",  
+      [
+        {
+          text: "Cancel",
+          style: "cancel",  
+        },
+        {
+          text: "Log Out",
+          style: "destructive",  
+          onPress: async () => {
+            try {
+              await signOut(auth);
+              router.push("../SignInScreen"); 
+            } catch (error) {
+              console.error("Error logging out:", error);
+              Alert.alert("Error", "Failed to log out. Please try again.");
+            }
+          },
+        },
+      ]
+    );
+  }
   return (
     <SafeAreaView style={styles.safeContainer}>
     <View style={styles.container}>
@@ -197,7 +224,7 @@ const ProfileScreen = () => {
   {/* Clear History */}
   <CustomButton
         text="Clear History" 
-        onPress={handleDeleteAccount} 
+        onPress={handleClearHistory} 
         type = "Tertiary"
         bgColor = "#FF5733"
         fgColor="black" />
@@ -213,6 +240,15 @@ const ProfileScreen = () => {
         type = "Tertiary"
         bgColor = "red"
         fgColor="black" />
+      </View>
+
+      {/* Log Out */}
+      <View style={styles.section}>
+        <Text style={styles.label}>Log Out </Text>
+        <CustomButton
+        text="Log Out" 
+        onPress={handleLogOut} 
+        type = "Secondary" />
       </View>
     </View>
     </SafeAreaView>

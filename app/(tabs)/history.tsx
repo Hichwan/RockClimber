@@ -44,7 +44,7 @@ const HistoryScreen = () => {
         return;
       }
   
-      console.log("✅ Logged-in User ID:", user.uid);
+      console.log(" Logged-in User ID:", user.uid);
   
       // ** Force token refresh every 55 minutes (before it expires)**
       user.getIdToken(true).catch(async (error) => {
@@ -195,7 +195,7 @@ const HistoryScreen = () => {
         <Text>No climb data available yet.</Text>
       )}
 
-      {/* **📝 List of Climbing Sessions** */}
+      {/* List of Climbing Sessions */}
       <FlatList
         data={sessions}
         keyExtractor={(item) => item.id}
