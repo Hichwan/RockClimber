@@ -146,11 +146,13 @@ const SignUpScreen: React.FC<{ navigation: any }> = () => {
           )}
         />
 
+        {/*Registers Account*/}
         <CustomButton 
           text="Register" 
           onPress={handleSubmit(onRegisterPressed)}
           type="Primary" />
 
+        {/*Standard terms and privacy windows for app*/}
         <Text style={styles.text}>
           By registering, you confirm that you accept our{' '}
           <Text style={styles.link} onPress={() => router.push('/terms')}>Terms of Use</Text>{' '}
@@ -158,6 +160,8 @@ const SignUpScreen: React.FC<{ navigation: any }> = () => {
           <Text style={styles.link} onPress={() => router.push('/privacy')}>Privacy Policy</Text>.
         </Text>
 
+        {/*Google Sign In*/}
+        {/*Need to fix*/}
         <CustomButton 
         text="Sign In with Google" 
         onPress={() => console.warn("Google Sign-In")} 
@@ -166,6 +170,8 @@ const SignUpScreen: React.FC<{ navigation: any }> = () => {
         fgColor="#DD4D44" 
         />
 
+        {/*Apple Sign In*/}
+        {/*Need to fix*/}
         <CustomButton 
         text="Sign In with Apple" 
         onPress={() => console.warn("Apple Sign-In")} 
@@ -174,6 +180,8 @@ const SignUpScreen: React.FC<{ navigation: any }> = () => {
         fgColor="#363636" 
         />
 
+
+        {/*Returns to Sign In*/}
         <CustomButton
         text = "Have an account? Sign in"
         onPress={onSignInPressed}

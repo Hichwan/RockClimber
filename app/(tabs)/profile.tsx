@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
-  View, Text, TextInput, StyleSheet, Alert, Button, SafeAreaView, Modal, TouchableOpacity 
+  View, Text, TextInput, StyleSheet, Alert, Button, SafeAreaView, Modal, TouchableOpacity, Switch, Linking, ScrollView 
 } from "react-native";
 import { getAuth, updatePassword, deleteUser, signOut, User } from "firebase/auth";
 import { collection, query, where, getDocs, deleteDoc } from "firebase/firestore";
@@ -8,6 +8,8 @@ import { db } from "../../src/config/firebaseConfig";
 import { Picker } from "@react-native-picker/picker";
 import CustomButton from '../../components/CustomButton/CustomButton';
 import { useRouter } from 'expo-router';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Location from "expo-location";
 
 const ProfileScreen = () => {
   const router = useRouter();
@@ -17,6 +19,9 @@ const ProfileScreen = () => {
   const [newPassword, setNewPassword] = useState("");
   const [selectedRange, setSelectedRange] = useState("all"); // Default to 'all'
   const [showPicker, setShowPicker] = useState(false);
+
+  const [gpsEnabled, setGpsEnabled] = useState(false);
+  const [permissionStatus, setPermissionStatus] = useState<string | null>(null);
 
   //Change Password Function
   const handleChangePassword = async () => {
@@ -41,6 +46,48 @@ const ProfileScreen = () => {
       } else {
         Alert.alert("Error", "An unknown error occurred.");
       }
+    }
+  };
+
+  useEffect(() => {
+    const loadGpsSetting = async () => {
+      try {
+        const storedGps = await AsyncStorage.getItem("gpsEnabled");
+        setGpsEnabled(storedGps === "true");
+      } catch (error) {
+        console.error("Error loading GPS setting:", error);
+      }
+    };
+    loadGpsSetting();
+  }, []);
+
+  const handleToggleGps = async (value: boolean) => {
+    if (value) {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === "granted") {
+        setPermissionStatus("Granted");
+        setGpsEnabled(true);
+        await AsyncStorage.setItem("gpsEnabled", "true");
+
+        await AsyncStorage.setItem("gpsUpdated", Date.now().toString());
+      } else {
+        Alert.alert(
+          "Permission Denied",
+          "Location access is required for GPS. Enable it in settings.",
+          [
+            { text: "Open Settings", onPress: () => Linking.openSettings() },
+            { text: "Cancel", style: "cancel" },
+          ]
+        );
+        setPermissionStatus("Denied");
+        setGpsEnabled(false);
+        await AsyncStorage.setItem("gpsEnabled", "false"); // Ensure stored state is updated
+      }
+    } else {
+      setPermissionStatus("Disabled");
+      setGpsEnabled(false);
+      await AsyncStorage.setItem("gpsEnabled", "false"); // Save to AsyncStorage
+      await AsyncStorage.setItem("gpsUpdated", Date.now().toString()); 
     }
   };
 
@@ -165,10 +212,11 @@ const ProfileScreen = () => {
   }
   return (
     <SafeAreaView style={styles.safeContainer}>
+    <ScrollView showsVerticalScrollIndicator={true}>
     <View style={styles.container}>
       <Text style={styles.title}>👤 Profile Settings</Text>
 
-      {/* 🔹 Change Password */}
+      {/* Change Password */}
       <View style={styles.section}>
         <Text style={styles.label}>Change Password</Text>
         <TextInput
@@ -183,6 +231,16 @@ const ProfileScreen = () => {
         onPress={handleChangePassword} 
         type="Primary" />
       </View>
+
+      <View style={styles.section}>
+          <Text style={styles.label}>Enable GPS for Auto Location</Text>
+          <Switch 
+            value={gpsEnabled} 
+            onValueChange={handleToggleGps} 
+          />
+          <Text>Status: {permissionStatus || "Unknown"}</Text>
+        </View>
+
 
  {/*  Delete Climbing History */}
 <View style={styles.section}>
@@ -209,10 +267,10 @@ const ProfileScreen = () => {
           itemStyle={{ color: "black" }} 
         >
           <Picker.Item label="All History" value="all" />
-          <Picker.Item label="Last 1 Day" value="1day" />
-          <Picker.Item label="Last 1 Week" value="1week" />
-          <Picker.Item label="Last 1 Month" value="1month" />
-          <Picker.Item label="Last 1 Year" value="1year" />
+          <Picker.Item label="Last 1 Day" value="1 day" />
+          <Picker.Item label="Last 1 Week" value="1 week" />
+          <Picker.Item label="Last 1 Month" value="1 month" />
+          <Picker.Item label="Last 1 Year" value="1 year" />
         </Picker>
 
         {/* Close Button */}
@@ -228,8 +286,16 @@ const ProfileScreen = () => {
         type = "Tertiary"
         bgColor = "#FF5733"
         fgColor="black" />
-</View>
+      </View>
 
+      {/* Log Out */}
+      <View style={styles.section}>
+        <Text style={styles.label}>Log Out </Text>
+        <CustomButton
+        text="Log Out" 
+        onPress={handleLogOut} 
+        type = "Secondary" />
+      </View>
 
       {/*  Delete Account */}
       <View style={styles.section}>
@@ -242,15 +308,9 @@ const ProfileScreen = () => {
         fgColor="black" />
       </View>
 
-      {/* Log Out */}
-      <View style={styles.section}>
-        <Text style={styles.label}>Log Out </Text>
-        <CustomButton
-        text="Log Out" 
-        onPress={handleLogOut} 
-        type = "Secondary" />
-      </View>
+
     </View>
+    </ScrollView>
     </SafeAreaView>
   );
 };

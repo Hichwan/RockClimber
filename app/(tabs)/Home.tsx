@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Modal } from 'react-native';
 import { Picker } from '@react-native-picker/picker';  
 import { StatusBar } from 'expo-status-bar';
@@ -7,6 +7,9 @@ import { ThemedView } from '@/components/ThemedView';
 import CustomButton from '../../components/CustomButton/CustomButton';
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { db, auth } from "../../src/config/firebaseConfig";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Location from 'expo-location';
+import { useFocusEffect } from '@react-navigation/native';
 
 const HomeScreen = () => {
   const [selectedValue, setSelectedValue] = useState("5");
@@ -14,6 +17,8 @@ const HomeScreen = () => {
   const [seconds, setSeconds] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const [showPicker, setShowPicker] = useState(false);  
+  const [gpsEnabled, setGpsEnabled] = useState(false);
+  const [gpsFetched, setGpsFetched] = useState(false);
 
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
@@ -28,6 +33,91 @@ const HomeScreen = () => {
 
     return () => clearInterval(interval!);
   }, [isRunning]);
+
+  //Listen for GPS setting changes & Fetch location
+  useEffect(() => {
+    const loadGpsSetting = async () => {
+      try {
+        const storedGps = await AsyncStorage.getItem("gpsEnabled");
+        const isGpsEnabled = storedGps === "true";
+        setGpsEnabled(isGpsEnabled);
+
+        if (isGpsEnabled) {
+          await fetchCurrentLocation();
+        }
+      } catch (error) {
+        console.error("🔥 Error loading GPS setting:", error);
+      }
+    };
+
+    loadGpsSetting();
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      const checkGpsSetting = async () => {
+        try {
+          const storedGps = await AsyncStorage.getItem("gpsEnabled");
+          const isGpsEnabled = storedGps === "true";
+          setGpsEnabled(isGpsEnabled);
+  
+          if (isGpsEnabled) {
+            console.log("📍 GPS setting is enabled, fetching current location...");
+            await fetchCurrentLocation(); 
+          }
+        } catch (error) {
+          console.error("🔥 Error checking GPS setting:", error);
+        }
+      };
+  
+      checkGpsSetting(); 
+  
+    }, [])
+  );
+  
+  useEffect(() => {
+    const updateLocationBasedOnGps = async () => {
+      if (!gpsEnabled) {
+        console.log("GPS disabled, clearing location...");
+        setLocation("");
+        await AsyncStorage.removeItem("lastLocation"); 
+      } else {
+        console.log("GPS enabled, fetching location...");
+        await fetchCurrentLocation();
+      }
+    };
+  
+    updateLocationBasedOnGps();
+  }, [gpsEnabled]);
+
+  // Fetch Current Location if GPS is Enabled
+  const fetchCurrentLocation = async () => {
+    if (!gpsEnabled) {
+      return;
+    }
+
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        alert("Permission Denied - Enable location services.");
+        return;
+      }
+
+      const locationData = await Location.getCurrentPositionAsync({});
+      const address = await Location.reverseGeocodeAsync(locationData.coords);
+
+      if (address.length > 0) {
+        const { city, region } = address[0];
+        const formattedLocation = `${city}, ${region}`;
+        setLocation(formattedLocation);
+        console.log("📍 Updated Location:", formattedLocation);
+      }
+    } catch (error) {
+      console.error("🔥 Error fetching location:", error);
+      alert("Error - Failed to fetch location.");
+    }
+  };
+
 
   const formatTime = (secs: number) => {
     const minutes = Math.floor(secs / 60);
@@ -56,7 +146,7 @@ const HomeScreen = () => {
       setSeconds(0);
       setIsRunning(false);
       setSelectedValue("5");  
-      setLocation("");
+      setLocation(gpsEnabled ? location : "");
   
       //Checks ID to ensure same user ID
       console.log(" Climb saved with ID:", climbRef.id);
@@ -124,6 +214,7 @@ const HomeScreen = () => {
       </View>
 
       
+      {/* Location Input */}
       <View style={styles.inputContainer}>
         <Text style={styles.label}>Enter Location:</Text>
         <TextInput

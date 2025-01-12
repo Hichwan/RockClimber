@@ -107,12 +107,13 @@ const SignInScreen = () => {
             resizeMode="contain"  
           />
 
+          {/*Email Bar*/}
           <Controller
             control={control}
             name="email"
             rules={{
               required: "Email is required",
-              pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: "Enter a valid email address" },
+              pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: "Enter a valid email address" }, //Requires a vaild email address
             }}
             render={({ field, fieldState: { error } }) => (
               <>
@@ -131,6 +132,7 @@ const SignInScreen = () => {
             )}
           />
 
+          {/*Password Bar*/}
           <Controller
             control={control}
             name="password"
@@ -157,10 +159,18 @@ const SignInScreen = () => {
           <CustomButton 
           text="Sign In" 
           onPress={handleSubmit(onSignInPressed)} 
-          type="Primary" />
-          <CustomButton text="Forgot Password" onPress={() => router.push('/ForgotPass')} type="Tertiary" />
-          
+          type="Primary" 
+          />
 
+          {/*Forgot Password*/}
+          <CustomButton 
+          text="Forgot Password" 
+          onPress={() => router.push('/ForgotPass')} 
+          type="Tertiary" 
+          />
+          
+          {/*Google Sign In*/}
+          {/*Need to fix*/}
           <CustomButton 
             text="Sign In with Google" 
             onPress={() => promptAsync()} 
@@ -169,6 +179,8 @@ const SignInScreen = () => {
             fgColor="#DD4D44" 
           />
 
+          {/*Apple Sign In*/}
+          {/*Need to fix*/}
           {Platform.OS === 'ios' && (
             <CustomButton 
               text="Sign In with Apple" 

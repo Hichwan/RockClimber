@@ -9,15 +9,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const screenWidth = Dimensions.get("window").width;
 
-// 🔹 Difficulty Mapping & MET Values
-const difficultyMap: Record<string, number> = {
-  "5": 1, "6": 2, "7": 3, "8": 4, "9": 5,
-  "10a": 6, "10b": 7, "10c": 8, "10d": 9,
-  "11a": 10, "11b": 11, "11c": 12, "11d": 13,
-  "12a": 14, "12b": 15, "12c": 16, "12d": 17,
-  "13a": 18, "13b": 19, "13c": 20, "13d": 21,
-  "14a": 22, "14b": 23, "14c": 24, "14d": 25
-};
+// Difficulty Mapping & MET Values
 
 const metValues: Record<string, number> = {
   "5": 5.8, "6": 5.8, "7": 5.8, "8": 5.8, "9": 5.8,
@@ -53,7 +45,7 @@ const Daily = () => {
 
     console.log(" Logged-in User ID:", user.uid);
 
-    // **🔍 Firestore Query - Only Fetch Today's Climbs**
+    // ** Firestore Query - Only Fetch Today's Climbs**
     const today = new Date();
     today.setHours(0, 0, 0, 0); // Set to start of day
 
@@ -117,7 +109,7 @@ const Daily = () => {
 
   // Calculate Calories Burned
   const calculateCalories = (difficulty: string, timeSpent: number): number => {
-    const metValue = metValues[difficulty] || 5.8; // Default MET
+    const metValue = metValues[difficulty] || 5.8;
     return ((metValue * (userWeight*2.2) * 3.5) / 200) * (timeSpent / 60);
   };
 
