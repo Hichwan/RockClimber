@@ -154,7 +154,10 @@ const SignInScreen = () => {
             )}
           />
 
-          <CustomButton text="Sign In" onPress={handleSubmit(onSignInPressed)} type="Primary" />
+          <CustomButton 
+          text="Sign In" 
+          onPress={handleSubmit(onSignInPressed)} 
+          type="Primary" />
           <CustomButton text="Forgot Password" onPress={() => router.push('/ForgotPass')} type="Tertiary" />
           
 

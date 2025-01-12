@@ -4,7 +4,7 @@ import {
   initializeAuth, 
   indexedDBLocalPersistence, 
 } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, collection, addDoc } from "firebase/firestore";
 
 
 const firebaseConfig = {
@@ -30,4 +30,4 @@ const auth = initializeAuth(app, {
 
 const db = getFirestore(app);
 
-export { auth, db };
+export { auth, db, collection, addDoc };
