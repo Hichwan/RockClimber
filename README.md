@@ -53,39 +53,50 @@ React Native Chart Kit	Data visualization for climbing progress
 **1. Installation & Running Locally**
 
  Clone the repository:
-
-sh
+ 
 Copy code
+
 git clone https://github.com/yourusername/RockClimbingTracker.git
+
 cd RockClimbingTracker
+
 
 **2. Install dependencies:**
 
-sh
 Copy code
+
 npm install
+
 or
 
-sh
 Copy code
+
 yarn install
 
 **3. Set up Firebase:**
 
 Create a Firebase project at Firebase Console
+
 Enable Firestore and Authentication (Email/Password)
+
 Copy Firebase config into src/config/firebaseConfig.ts
 
 **4. Run the app:**
 
-sh
+
 Copy code
+
 expo start
+
 Scan the QR code with Expo Go (iOS/Android)
+
 Or run in an emulator:
-sh
+
+
 Copy code
+
 npm run android  # For Android
+
 npm run ios      # For iOS (Mac only)
 
 
