@@ -1,5 +1,6 @@
+import React from 'react';
 import { useEffect, useState, useRef } from "react";
-import { View, Text, FlatList, StyleSheet, Dimensions, SafeAreaView, Animated } from "react-native";
+import { View, Text, FlatList, StyleSheet, Dimensions, SafeAreaView, Image, TouchableOpacity, Modal, Button } from "react-native";
 import { collection, query, where, orderBy, onSnapshot } from "firebase/firestore";
 import { db, auth } from "../../src/config/firebaseConfig";
 import { LineChart } from "react-native-chart-kit";
@@ -30,11 +31,17 @@ const HistoryScreen = () => {
     location?: string;
     difficulty: string;
     timeSpent: number;
+    imageUrl?: string;
   };
   
   const [sessions, setSessions] = useState<ClimbingSession[]>([]);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const flatListRef = useRef<FlatList>(null);
+
+  const [selectedClimb, setSelectedClimb] = useState<ClimbingSession | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+
+
 
   useEffect(() => {
     const authInstance = getAuth();
@@ -179,6 +186,15 @@ const HistoryScreen = () => {
     }
   };
 
+  const handleOpenModal = (climb: ClimbingSession) => {
+    setSelectedClimb(climb);
+    setModalVisible(true);
+  };
+  const handleCloseModal = () => {
+    setSelectedClimb(null);
+    setModalVisible(false);
+  };
+
   return (
     <SafeAreaView style={styles.safeContainer}>  
     <View style={styles.container}>
@@ -225,24 +241,56 @@ const HistoryScreen = () => {
 
       {/* List of Climbing Sessions */}
       <FlatList
-          ref={flatListRef}
           data={sessions}
           keyExtractor={(item) => item.id}
-          renderItem={({ item, index }) => (
-            <View style={[
-              styles.sessionItem,
-              selectedIndex === index ? styles.selectedSession : {} // Highlight selected
-            ]}>
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={styles.sessionItem}
+              onPress={() => handleOpenModal(item)}
+            >
               <Text>📅 {new Date(item.timestamp?.toDate()).toLocaleDateString()}</Text>
               <Text>📍 {item.location || "Unknown"}</Text>
-              <Text>🎯 Difficulty: {reverseDifficultyMap[item.difficulty] || item.difficulty}</Text>
+              <Text>🎯 Difficulty: {item.difficulty}</Text>
               <Text>⏳ Time Spent: {Math.floor(item.timeSpent / 60)}m {item.timeSpent % 60}s</Text>
-            </View>
-  )}
-/>
+              {item.imageUrl && (
+                <Image source={{ uri: item.imageUrl }} style={styles.imagePreview} />
+              )}
+            </TouchableOpacity>
+          )}
+        />
 
+<Modal
+  visible={modalVisible}
+  transparent={true}
+  animationType="slide"
+  onRequestClose={() => setModalVisible(false)}
+>
+  <View style={styles.modalContainer}>
+    <View style={styles.modalContent}>
+      {selectedClimb && (
+        <>
+          <Text style={styles.modalTitle}>Climb Details</Text>
+          <Text>📅 Date: {new Date(selectedClimb.timestamp?.toDate()).toLocaleDateString()}</Text>
+          <Text>📍 Location: {selectedClimb.location || "Unknown"}</Text>
+          <Text>🎯 Difficulty: {selectedClimb.difficulty}</Text>
+          <Text>⏳ Time Spent: {Math.floor(selectedClimb.timeSpent / 60)}m {selectedClimb.timeSpent % 60}s</Text>
+
+          {/* ✅ Display Full-Size Image */}
+          {selectedClimb.imageUrl && (
+            <Image source={{ uri: selectedClimb.imageUrl }} style={styles.fullImage} />
+          )}
+
+          {/* Close Button */}
+          <Button title="Close" onPress={() => setModalVisible(false)} />
+        </>
+      )}
+    </View>
+  </View>
+</Modal>
     </View>
     </SafeAreaView>
+
+    
   );
 };
 
@@ -277,7 +325,38 @@ const styles = StyleSheet.create({
 
   selectedSession:{
     backgroundColor: "#FFFF99"
-  }
+  },
+
+  imagePreview: {
+    width: 100,
+    height: 100,
+    marginTop: 5,
+    borderRadius: 5,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  modalContent: {
+    backgroundColor: "white",
+    padding: 20,
+    borderRadius: 10,
+    alignItems: "center",
+    width: "80%",
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 10,
+  },
+  fullImage: {
+    width: 300,
+    height: 300,
+    marginTop: 10,
+    borderRadius: 5,
+  },
 });
 
 export default HistoryScreen;

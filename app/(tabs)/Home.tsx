@@ -1,349 +1,160 @@
-import { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Modal } from 'react-native';
-import { Picker } from '@react-native-picker/picker';  
-import { StatusBar } from 'expo-status-bar';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import CustomButton from '../../components/CustomButton/CustomButton';
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import { db, auth } from "../../src/config/firebaseConfig";
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Location from 'expo-location';
-import { useFocusEffect } from '@react-navigation/native';
+import React, { useState, useEffect } from "react";
+import { View, Text, StyleSheet, ActivityIndicator, Button } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { collection, query, where, orderBy, getDocs } from "firebase/firestore";
+import { auth, db } from "../../src/config/firebaseConfig";
 
-const HomeScreen = () => {
-  const [selectedValue, setSelectedValue] = useState("5");
-  const [location, setLocation] = useState('');
-  const [seconds, setSeconds] = useState(0);
-  const [isRunning, setIsRunning] = useState(false);
-  const [showPicker, setShowPicker] = useState(false);  
-  const [gpsEnabled, setGpsEnabled] = useState(false);
-  const [gpsFetched, setGpsFetched] = useState(false);
+export default function HomeScreen() {
+  const [manualModel, setManualModel] = useState<{ slope: number; intercept: number } | null>(null);
+  const [prediction, setPrediction] = useState<number | null>(null);
+  const [userData, setUserData] = useState<{ session: number; difficulty: number }[]>([]);
+  const [metrics, setMetrics] = useState<{ r2: number; mse: number } | null>(null);
 
   useEffect(() => {
-    let interval: NodeJS.Timeout | null = null;
+    async function initializeData() {
+      const userClimbs = await fetchUserClimbs();
+      setUserData(userClimbs);
 
-    if (isRunning) {
-      interval = setInterval(() => {
-        setSeconds((prevSeconds) => prevSeconds + 1);
-      }, 1000);
-    } else if (!isRunning && seconds !== 0) {
-      clearInterval(interval!);
+      if (userClimbs.length > 2) {
+        await retrainModelWithoutTensorFlow(userClimbs, true);
+      } else {
+        console.log("⚠️ Not enough data to train the manual model.");
+      }
     }
 
-    return () => clearInterval(interval!);
-  }, [isRunning]);
-
-  //Listen for GPS setting changes & Fetch location
-  useEffect(() => {
-    const loadGpsSetting = async () => {
-      try {
-        const storedGps = await AsyncStorage.getItem("gpsEnabled");
-        const isGpsEnabled = storedGps === "true";
-        setGpsEnabled(isGpsEnabled);
-
-        if (isGpsEnabled) {
-          await fetchCurrentLocation();
-        }
-      } catch (error) {
-        console.error("🔥 Error loading GPS setting:", error);
-      }
-    };
-
-    loadGpsSetting();
+    initializeData();
   }, []);
 
-  useFocusEffect(
-    useCallback(() => {
-      const checkGpsSetting = async () => {
-        try {
-          const storedGps = await AsyncStorage.getItem("gpsEnabled");
-          const isGpsEnabled = storedGps === "true";
-          setGpsEnabled(isGpsEnabled);
-  
-          if (isGpsEnabled) {
-            console.log("📍 GPS setting is enabled, fetching current location...");
-            await fetchCurrentLocation(); 
-          }
-        } catch (error) {
-          console.error("🔥 Error checking GPS setting:", error);
-        }
-      };
-  
-      checkGpsSetting(); 
-  
-    }, [])
-  );
-  
-  useEffect(() => {
-    const updateLocationBasedOnGps = async () => {
-      if (!gpsEnabled) {
-        console.log("GPS disabled, clearing location...");
-        setLocation("");
-        await AsyncStorage.removeItem("lastLocation"); 
-      } else {
-        console.log("GPS enabled, fetching location...");
-        await fetchCurrentLocation();
+  const fetchUserClimbs = async () => {
+    try {
+      if (!auth.currentUser) {
+        console.error("User not logged in.");
+        return [];
       }
-    };
-  
-    updateLocationBasedOnGps();
-  }, [gpsEnabled]);
 
-  // Fetch Current Location if GPS is Enabled
-  const fetchCurrentLocation = async () => {
-    if (!gpsEnabled) {
+      const q = query(
+        collection(db, "climbing_sessions"),
+        where("userId", "==", auth.currentUser.uid),
+        orderBy("timestamp", "asc")
+      );
+
+      const querySnapshot = await getDocs(q);
+      const climbs = querySnapshot.docs.map((doc, index) => ({
+        session: index + 1,
+        difficulty: parseInt(doc.data().difficulty) || 5,
+      }));
+
+      console.log("📊 Loaded Climb Data:", climbs);
+      return climbs;
+    } catch (error) {
+      console.error("Error fetching user climbs:", error);
+      return [];
+    }
+  };
+
+  const retrainModelWithoutTensorFlow = async (
+    data: { session: number; difficulty: number }[],
+    isAutomatic: boolean
+  ) => {
+    if (data.length < 2) {
+      console.log("⚠️ Not enough data to train the manual model.");
       return;
     }
 
+    console.log(`${isAutomatic ? "⏳ Automatically retraining" : "⏳ Manually retraining"} manual model...`);
+
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        alert("Permission Denied - Enable location services.");
-        return;
+      const x = data.map((d) => d.session);
+      const y = data.map((d) => d.difficulty);
+
+      const meanX = x.reduce((a, b) => a + b, 0) / x.length;
+      const meanY = y.reduce((a, b) => a + b, 0) / y.length;
+
+      let numerator = 0;
+      let denominator = 0;
+      for (let i = 0; i < x.length; i++) {
+        numerator += (x[i] - meanX) * (y[i] - meanY);
+        denominator += (x[i] - meanX) ** 2;
       }
+      const m = numerator / denominator;
+      const b = meanY - m * meanX;
 
-      const locationData = await Location.getCurrentPositionAsync({});
-      const address = await Location.reverseGeocodeAsync(locationData.coords);
+      console.log(`📊 Manual Model Coefficients: m=${m}, b=${b}`);
+      setManualModel({ slope: m, intercept: b });
 
-      if (address.length > 0) {
-        const { city, region } = address[0];
-        const formattedLocation = `${city}, ${region}`;
-        setLocation(formattedLocation);
-        console.log("📍 Updated Location:", formattedLocation);
-      }
+      // Predict y values based on the model
+      const yPredicted = x.map((xi) => m * xi + b);
+
+      // Calculate MSE
+      const mse =
+        y.reduce((sum, yi, i) => sum + (yi - yPredicted[i]) ** 2, 0) / y.length;
+
+      // Calculate R²
+      const totalVariance = y.reduce((sum, yi) => sum + (yi - meanY) ** 2, 0);
+      const residualVariance = y.reduce(
+        (sum, yi, i) => sum + (yi - yPredicted[i]) ** 2,
+        0
+      );
+      const r2 = 1 - residualVariance / totalVariance;
+
+      console.log(`📊 Manual Metrics: MSE=${mse}, R²=${r2}`);
+      setMetrics({ r2, mse });
     } catch (error) {
-      console.error("🔥 Error fetching location:", error);
-      alert("Error - Failed to fetch location.");
+      console.error("Error during manual training:", error);
     }
   };
 
+  const predictNextWithoutTensorFlow = (
+    model: { slope: number; intercept: number } | null,
+    nextSession: number
+  ) => {
+    if (!model) {
+      console.error("Manual model is not trained yet.");
+      return null;
+    }
 
-  const formatTime = (secs: number) => {
-    const minutes = Math.floor(secs / 60);
-    const remainingSeconds = secs % 60;
-    return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
+    const { slope, intercept } = model;
+    const predictedDifficulty = slope * nextSession + intercept;
+    return predictedDifficulty;
   };
 
-  const saveClimb = async () => {
-    if (!selectedValue || !location || seconds === 0) {
-      alert("Please fill all fields and record time before submitting.");
-      return;
-    }
-  
-    try {
-      const climbRef = await addDoc(collection(db, "climbing_sessions"), {
-        userId: auth.currentUser?.uid,
-        difficulty: selectedValue,
-        location: location.trim() || "Unknown",
-        timeSpent: seconds,
-        timestamp: serverTimestamp(), 
-      });
-  
-      alert("Climb saved successfully!");
-  
-      //Resets all values after saving
-      setSeconds(0);
-      setIsRunning(false);
-      setSelectedValue("5");  
-      setLocation(gpsEnabled ? location : "");
-  
-      //Checks ID to ensure same user ID
-      console.log(" Climb saved with ID:", climbRef.id);
-  
-    } catch (error) {
-      console.error(" Error saving climb:", error);
-      alert("Failed to save climb.");
+  const handlePredictNextClimb = () => {
+    const nextSession = userData.length + 1;
+    const predictedDifficulty = predictNextWithoutTensorFlow(manualModel, nextSession);
+
+    if (predictedDifficulty !== null) {
+      setPrediction(Math.round(predictedDifficulty));
+      console.log(`📊 Predicted Difficulty for Session ${nextSession}: ${Math.round(predictedDifficulty)}`);
     }
   };
+
   return (
-    <ThemedView style={styles.container}>
-      <ThemedText type="title" style={styles.title}>Climb On!</ThemedText>
-
-      
-      <View style={styles.inputContainer}>
-        <Text style={styles.label}>Select Difficulty:</Text>
-
-        
-        <TouchableOpacity 
-          style={styles.pickerContainer} 
-          onPress={() => setShowPicker(true)}
-        >
-          <Text style={styles.selectedValueText}>{selectedValue}</Text>
-        </TouchableOpacity>
-
-        {/*Creates Modal to allow choosing difficulty*/}
-        <Modal
-          animationType="slide"
-          transparent={true}
-          visible={showPicker}
-          onRequestClose={() => setShowPicker(false)} 
-        >
-          <View style={styles.modalContainer}>
-            <View style={styles.pickerWrapper}>
-              <Picker
-                selectedValue={selectedValue}
-                onValueChange={(itemValue) => {
-                  setSelectedValue(itemValue.toString());
-                  setShowPicker(false); 
-                }}
-                style={styles.picker}
-                itemStyle={{ color: 'black' }} 
-              >
-                <Picker.Item label="5" value="5" />
-                <Picker.Item label="6" value="6" />
-                <Picker.Item label="7" value="7" />
-                <Picker.Item label="8" value="8" />
-                <Picker.Item label="9" value="9" />
-                <Picker.Item label="10a" value="10a" />
-                <Picker.Item label="10b" value="10b" />
-                <Picker.Item label="10c" value="10c" />
-                <Picker.Item label="10d" value="10d" />
-                <Picker.Item label="11a" value="11a" />
-                <Picker.Item label="11b" value="11b" />
-                <Picker.Item label="11c" value="11c" />
-                <Picker.Item label="11d" value="11d" />
-                <Picker.Item label="12a" value="12a" />
-                <Picker.Item label="12b" value="12b" />
-                <Picker.Item label="12c" value="12c" />
-                <Picker.Item label="12d" value="12d" />
-              </Picker>
-            </View>
-          </View>
-        </Modal>
-      </View>
-
-      
-      {/* Location Input */}
-      <View style={styles.inputContainer}>
-        <Text style={styles.label}>Enter Location:</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter location"
-          placeholderTextColor="white"
-          value={location}
-          onChangeText={setLocation}
-        />
-      </View>
-
-      {/* Timer */}
-      <View style={styles.timerContainer}>
-        <Text 
-        style={styles.timerText}>{formatTime(seconds)}
-        </Text>
-      </View>
-
-      {/* Timer Controls */}
-      <View style={styles.buttonContainer}>
-        <CustomButton 
-          text={isRunning ? "Pause Timer" : "Start Timer"} 
-          onPress={() => setIsRunning(!isRunning)} 
-          type = "Primary"
-          fgColor={isRunning ? "white" : "black"}
-          bgColor={isRunning ? "#FF5733" : ""}
-        />
-      </View>
-
-      <View style={styles.buttonContainer}>
-        <CustomButton 
-        text="Reset Timer" 
-        onPress={() => { setIsRunning(false); setSeconds(0); }} 
-        type="Secondary" 
-        bgColor= "white"
-        />
-        
-      </View>
-      <StatusBar style="auto" />
-
-      {/* Save Climb Button */}
-      <CustomButton 
-      text="Save Climb" 
-      onPress={saveClimb} 
-      type = "Tertiary"
-      bgColor="#28A745" 
-      fgColor ="black"
+    <View style={styles.container}>
+      <Text style={styles.title}>Climb On!</Text>
+      <Button
+        title="Retrain Manual Model"
+        onPress={() => retrainModelWithoutTensorFlow(userData, false)}
+        disabled={userData.length < 2}
       />
-
-      <StatusBar style="auto" />
-    </ThemedView>
+      <Button
+        title="Predict Next Climb (Manual)"
+        onPress={handlePredictNextClimb}
+        disabled={userData.length < 2 || !manualModel}
+      />
+      {metrics && (
+        <>
+          <Text style={styles.metrics}>R²: {metrics.r2.toFixed(2)}</Text>
+          <Text style={styles.metrics}>MSE: {metrics.mse.toFixed(2)}</Text>
+        </>
+      )}
+      {prediction && <Text style={styles.prediction}>Next Difficulty: {prediction}</Text>}
+    </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  inputContainer: {
-    width: '100%',
-    marginBottom: 15,
-  },
-  label: {
-    fontSize: 16,
-    marginBottom: 5,
-    textAlign: 'center',
-    color: 'white'
-  },
-  pickerContainer: {
-    backgroundColor: '#e0e0e0',
-    padding: 12,
-    borderRadius: 5,
-    alignItems: 'center',
-  },
-  selectedValueText: {
-    fontSize: 18,
-    color: 'black', 
-  },
-  picker: {
-    height: 200, 
-    width: '100%',
-    backgroundColor: '#f8f8f8',
-  },
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)', 
-  },
-  pickerWrapper: {
-    backgroundColor: 'white',
-    width: '80%',
-    padding: 10,
-    borderRadius: 10,
-  },
-  input: {
-    width: '100%',
-    padding: 10,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 5,
-    textAlign: 'center',
-    color: "white",
-  },
-  timerContainer: {
-    marginVertical: 20,
-    padding: 15,
-    backgroundColor: '#f8f8f8',
-    borderRadius: 10,
-  },
-  timerText: {
-    fontSize: 40,
-    fontWeight: 'bold',
-    color: '#333',
-    textAlign: 'center',
-  },
-  buttonContainer: {
-    marginTop: 10,
-    width: '100%',
-  },
+  container: { flex: 1, alignItems: "center", justifyContent: "center" },
+  title: { fontSize: 24, fontWeight: "bold" },
+  metrics: { fontSize: 16, color: "purple", marginTop: 10 },
+  prediction: { fontSize: 20, color: "blue", marginTop: 10 },
 });
-
-export default HomeScreen;

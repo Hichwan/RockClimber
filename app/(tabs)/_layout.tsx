@@ -10,11 +10,17 @@ export default function TabLayout() {
 
           if (route.name === "Home") {
             iconName = focused ? "home" : "home-outline";
-          } else if (route.name === "History") {
+          } 
+          else if (route.name === "Record") {
+            iconName = focused ? "stopwatch" : "stopwatch-outline";
+          } 
+          else if (route.name === "History") {
             iconName = focused ? "time" : "time-outline";
-          } else if (route.name === "Profile") {
+          } 
+          else if (route.name === "Profile") {
             iconName = focused ? "person" : "person-outline";
-          } else if (route.name === "Daily") {
+          } 
+          else if (route.name === "Daily") {
             iconName = focused ? "stats-chart" : "stats-chart-outline";
           }
 
@@ -26,6 +32,7 @@ export default function TabLayout() {
       })}
     >
       <Tabs.Screen name="Home" options={{ title: "Home" }} />
+      <Tabs.Screen name="Record" options={{ title: "Record" }} />
       <Tabs.Screen name="Daily" options={{ title: "Daily" }} />
       <Tabs.Screen name="History" options={{ title: "History" }} />
       <Tabs.Screen name="Profile" options={{ title: "Profile" }} />
